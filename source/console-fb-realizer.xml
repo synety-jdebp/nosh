@@ -1,0 +1,620 @@
+<refentry id="console-fb-realizer">
+
+<refmeta xmlns:xi="http://www.w3.org/2001/XInclude">
+<refentrytitle>console-fb-realizer</refentrytitle>
+<manvolnum>1</manvolnum>
+<refmiscinfo class="manual">user commands</refmiscinfo>
+<refmiscinfo class="source">nosh</refmiscinfo>
+<xi:include href="version.xml" />
+</refmeta>
+
+<refnamediv>
+<refname>console-fb-realizer</refname>
+<refpurpose>realize a user-space virtual terminal on a framebuffer</refpurpose>
+</refnamediv>
+
+<refsynopsisdiv>
+<cmdsynopsis>
+<command>console-fb-realizer</command>
+<arg choice='opt'>--kernel-vt</arg>
+<arg choice='opt'>--kernel-vt-number <replaceable>number</replaceable></arg>
+<arg choice='opt'>--input <replaceable>filename</replaceable></arg>
+<arg choice='opt'>--ugen-input <replaceable>filename</replaceable></arg>
+<arg choice='opt'>--atkeyboard <replaceable>filename</replaceable></arg>
+<arg choice='opt'>--sysmouse <replaceable>filename</replaceable></arg>
+<arg choice='opt'>--keyboard-map <replaceable>filename</replaceable></arg>
+<arg choice='opt'>--font-light-r <replaceable>filename</replaceable></arg>
+<arg choice='opt'>--font-light-o <replaceable>filename</replaceable></arg>
+<arg choice='opt'>--font-light-i <replaceable>filename</replaceable></arg>
+<arg choice='opt'>--font-medium-r <replaceable>filename</replaceable></arg>
+<arg choice='opt'>--font-medium-o <replaceable>filename</replaceable></arg>
+<arg choice='opt'>--font-medium-i <replaceable>filename</replaceable></arg>
+<arg choice='opt'>--font-demibold-r <replaceable>filename</replaceable></arg>
+<arg choice='opt'>--font-demibold-o <replaceable>filename</replaceable></arg>
+<arg choice='opt'>--font-demibold-i <replaceable>filename</replaceable></arg>
+<arg choice='opt'>--font-bold-r <replaceable>filename</replaceable></arg>
+<arg choice='opt'>--font-bold-o <replaceable>filename</replaceable></arg>
+<arg choice='opt'>--font-bold-i <replaceable>filename</replaceable></arg>
+<arg choice='opt'>--vtfont-faint-r <replaceable>filename</replaceable></arg>
+<arg choice='opt'>--vtfont-faint-o <replaceable>filename</replaceable></arg>
+<arg choice='opt'>--vtfont-faint-i <replaceable>filename</replaceable></arg>
+<arg choice='opt'>--vtfont-normal-r <replaceable>filename</replaceable></arg>
+<arg choice='opt'>--vtfont-normal-o <replaceable>filename</replaceable></arg>
+<arg choice='opt'>--vtfont-normal-i <replaceable>filename</replaceable></arg>
+<arg choice='opt'>--vtfont <replaceable>filename</replaceable></arg>
+<arg choice='opt'>--quadrant <replaceable>number</replaceable></arg>
+<arg choice='opt'>--bold-as-colour</arg>
+<arg choice='opt'>--80-columns</arg>
+<arg choice='req'><replaceable>vcname</replaceable></arg>
+<arg choice='opt'><replaceable>fbname</replaceable></arg>
+</cmdsynopsis>
+</refsynopsisdiv>
+
+<refsection><title>Description</title>
+
+<para>
+<command>console-fb-realizer</command> is the I/O back-end for a (user-space) virtual terminal, that realizes that virtual terminal with a framebuffer device and event devices.
+</para>
+
+<para>
+It opens the character/attribute buffer file <filename><replaceable>vcname</replaceable>/display</filename> and the input FIFO <filename><replaceable>vcname</replaceable>/input</filename>.
+These are the "master side" interfaces of the user-space virtual terminal, as detailed in <citerefentry><refentrytitle>console-terminal-emulator</refentrytitle><manvolnum>1</manvolnum></citerefentry>.
+</para>
+
+<para>
+It also opens the framebuffer device and the input devices (if any) specified by command line options.
+These are the concrete devices with which the user-space virtual terminal is to be realized.
+It is the user's responsibility to ensure that these refer to the same, single, physical user station.
+</para>
+
+<para>
+It then enters a loop where it simultaneously:
+</para>
+
+<itemizedlist>
+
+<listitem>
+<para>
+writes all data received from the input devices to the input FIFO for the virtual terminal, translating to the abstract keyboard and mouse; and
+</para>
+</listitem>
+
+<listitem>
+<para>
+renders the contents of the character/attribute buffer file for the virtual terminal on the framebuffer.
+</para>
+</listitem>
+
+</itemizedlist>
+
+<para>
+The framebuffer device need not be the same size or height:width ratio as the virtual terminal display.
+When it is smaller than the display, the realizer will move the framebuffer around as a "window" onto the virtual terminal display, such that the cursor position is always within the window.
+When it is larger than the display, the realizer will align the virtual terminal display to one corner of the framebuffer, as specified by the <arg choice='plain'>--quardant</arg> command-line option.
+It will render the parts of the framebuffer outwith the virtual terminal display area as black.
+</para>
+
+</refsection>
+
+<refsection><title>Specifying I/O devices</title>
+
+<para>
+I/O devices are specified by various command-line options.
+</para>
+
+<variablelist>
+
+<varlistentry>
+<term><arg choice='plain'>--input <replaceable>filename</replaceable></arg></term>
+<listitem><para>
+This command-line option option designates the superior choices of input device for each platform, the fundamental Human Input devices enumerated by the operating system.
+On Linux, <replaceable>filename</replaceable> must be the device file name of an event device, using the evdev subsystem, such as <filename>/dev/input/event0</filename> for example.
+On the BSDs <replaceable>filename</replaceable> must be the device file name of a USB HID device, using the <citerefentry><refentrytitle>uhid</refentrytitle><manvolnum>4</manvolnum></citerefentry> protocol, such as <filename>/dev/uhid0</filename> for example.
+</para><para>
+The "type" of the device (e.g. keyboard, tablet, mouse, and so forth) is queried from the device itself, without need for explicitly describing it on the command line.
+Any combination of mouse, tablet, and keyboard input events in a single USB device can be handled.
+</para></listitem>
+</varlistentry>
+
+<varlistentry>
+<term><arg choice='plain'>--gen-input <replaceable>control-filename</replaceable> <replaceable>function-filename</replaceable></arg></term>
+<listitem><para>
+This command-line option option designates a slightly less superior choice of input device on the BSDs.
+<replaceable>control-filename</replaceable> and <replaceable>function-filename</replaceable> must be the the device file names of Generic USB control and function devices, using the <citerefentry><refentrytitle>ugen</refentrytitle><manvolnum>4</manvolnum></citerefentry> protocol, such as <filename>/dev/usb/0.2.0</filename> and <filename>/dev/usb/0.2.1</filename> for example.
+</para><para>
+This is slightly less superior because it does not employ the operating system to filter out USB devices that are not Human Input devices.
+One can incorrectly give the names of non-HID devices to this option, and <command>console-fb-realizer</command> will attempt to use them as USB HID devices.
+</para></listitem>
+</varlistentry>
+
+<varlistentry>
+<term><arg choice='plain'>--atkeyboard <replaceable>filename</replaceable></arg></term>
+<listitem><para>
+This command-line option option designates an inferior choice of input device.
+<replaceable>filename</replaceable> must be a device that speaks the "kbio" API to programs.
+On Linux only kernel virtual terminal devices speak this protocol.
+On the BSDs, <replaceable>filename</replaceable> must be an a kernel virtual terminal device or an <citerefentry><refentrytitle>atkbd</refentrytitle><manvolnum>4</manvolnum></citerefentry> device, such as <filename>/dev/atkbd0</filename>, <filename>/dev/kbdmux0</filename>, or <filename>/dev/ukbd0</filename> for examples.
+</para><para>
+This option employed with a kernel virtual terminal device is not generally as useful or functional as the Linux <arg choice='plain'>--kernel-vt-number</arg> or the BSD <arg choice='plain'>--kernel-vt</arg> option, of whose functionality it is essentially a subset.
+</para><para>
+This is inferior because the AT Keyboard model does not include things that are accessible via the USB HID protocol and (to a lesser extent) the Linux input event protocol.
+Those latter support extra keypads and more keys, including extra extended keys (equals, comma,  plus/minus, and brackets on the calculator keypad for examples) and consumer device keys (calculator, WWW, and eject for examples).
+</para></listitem>
+</varlistentry>
+
+<varlistentry>
+<term><arg choice='plain'>--sysmouse <replaceable>filename</replaceable></arg></term>
+<listitem><para>
+This command-line option option designates an inferior choice of input device on the BSDs.
+<replaceable>filename</replaceable> must be a device that speaks the BSD <citerefentry><refentrytitle>mouse</refentrytitle><manvolnum>4</manvolnum></citerefentry> protocol to programs, such as <filename>/dev/sysmouse</filename> or <filename>/dev/psm0</filename> for examples.
+BSD mouse devices, while speaking their own idiosyncratic protocols at "mouse level 1" all have a common "mouse level 2" of operation where they all speak this same protocol.
+</para><para>
+However, this protocol is limited compared to using the USB HID devices directly.
+It has no support for absolute-position pointing devices, such as USB tablets, because the protocol simply does not support the notion of transmitting absolute position information, only relative pointer movements.
+</para><para>
+Transparent "mouse integration" under some virtual machine systems requires support for absolute-position pointing devices.
+(In Oracle VirtualBox, for example, when "mouse integration" is off, host machine mouse input is reported to the guest machine as input from a relative-positioning mouse device; but when "mouse integration" is on, host machine mouse input is reported to the guest machine as input from an absolute-positioning tablet device.)
+This type of device cannot work with them.
+</para></listitem>
+</varlistentry>
+
+<varlistentry>
+<term><arg choice='plain'>--ps2mouse <replaceable>filename</replaceable></arg></term>
+<listitem><para>
+This command-line option option designates an inferior choice of input device on Linux.
+<replaceable>filename</replaceable> must be a device that speaks the Linux ps2 mouse protocol to programs, such as <filename>/dev/input/mice</filename> for example.
+</para><para>
+This protocol has no scope for mice wheels, more than 3 buttons, Z or W axes.
+It is also poorly effected in some virtual machine systems, which try to enforce a relationship between "mickeys" in the virtual hardware and pixels on the host display, and do not always do that right.
+</para></listitem>
+</varlistentry>
+
+<varlistentry>
+<term><arg choice='plain'>--kernel-vt</arg></term>
+<listitem><para>
+This command-line option option designates using a kernel virtual terminal for input, output, and device sharing on the BSDs.
+One still designates the mouse device separately with an <arg choice='plain'>--input</arg> or a <arg choice='plain'>--sysmouse</arg> command line option, however.
+On the BSDs, the underlying keyboard input and framebuffer output devices are accessible via a kernel virtual terminal.
+</para><para>
+The realizer obtains the name of the allocated kernel virtual terminal device from the value of the <envar>TTY</envar> environment variable.
+(One can invoke the realizer via <citerefentry><refentrytitle>vc-get-tty</refentrytitle><manvolnum>1</manvolnum></citerefentry> or a similar command that obtains a virtual terminal device name from an abbreviation, or just supply the full device name.
+Note that it is <emphasis>not</emphasis> required to pre-open this device, nor to set it as the controlling terminal.)
+It is used for keyboard input, framebuffer output, and device sharing and must speak the "fbio" and "kbio" APIs to programs.
+</para><para>
+For the duration, the realizer switches the virtual terminal display into a suitable graphics mode, configures it to deliver raw keycodes, switches its line discipline to non-canonical input (i.e. "raw") mode, and tells it not to draw output from the virtual terminal on the screen nor to send input to the virtual terminal from the keyboard; switching all of these back to their saved prior settings upon its termination.
+The realizer attempts to choose the highest resolution graphics mode available that has a 32-bit or 24-bit colour depth.
+The <arg choice='plain'>--80-columns</arg> option constrains its choice to graphics modes that are no wider than 80 columns (1280 pixels).
+</para></listitem>
+</varlistentry>
+
+<varlistentry>
+<term><arg choice='plain'>--kernel-vt-number <replaceable>number</replaceable></arg></term>
+<listitem><para>
+This command-line option option designates using a kernel virtual terminal for input and device sharing on Linux.
+One still designates the mouse and framebuffer devices separately with an <arg choice='plain'>--input</arg> or a <arg choice='plain'>--ps2mouse</arg> command line option and a <replaceable>fbname</replaceable> command line argument, however.
+On Linux, only the underlying keyboard input devices are accessible via a kernel virtual terminal.
+</para><para>
+The realizer needs to know the <replaceable>number</replaceable> of the kernel virtual terminal, rather than its name.
+(The BSDs have an API where, with an open file descriptor to a kernel virtual terminal device, one can obtain its virtual terminal number.
+Linux lacks such an API.
+Note that it is <emphasis>not</emphasis> required to pre-open this device, nor to set it as the controlling terminal.)
+</para><para>
+For the duration, the realizer configures the virtual terminal to deliver raw keycodes, switches its line discipline to non-canonical input (i.e. "raw") mode, and tells it not to draw output from the virtual terminal on the screen nor to send input to the virtual terminal from the keyboard; switching all of these back to their saved prior settings upon its termination.
+</para></listitem>
+</varlistentry>
+
+<varlistentry>
+<term><arg choice='plain'><replaceable>fbname</replaceable></arg></term>
+<listitem><para>
+This command-line option option designates a choice of output device.
+<replaceable>fbname</replaceable> must be a device that speaks the "fbio" API to programs.
+On Linux only framebuffer devices, such as <filename>/dev/fb0</filename>, speak this protocol.
+(Remember that "kernel mode setting" device drivers create simple framebuffer devices for programs that use the "fbio" API.)
+On the BSDs, <replaceable>fbname</replaceable> must be an a kernel virtual terminal device, as framebuffers are not directly accessible via separate devices.
+On the BSDs, the <arg choice='plain'>--kernel-vt</arg> command-line option implies using the kernel virtual terminal's framebuffer, and renders this command-line argument superfluous.
+</para></listitem>
+</varlistentry>
+
+</variablelist>
+
+<para>
+For a tutorial on how to employ these in concert, see the Nosh Guide.
+</para>
+
+</refsection>
+
+<refsection><title>Fonts</title>
+
+<para>
+Virtual terminal display buffers have faint, boldface, italic, strikethrough, and underline attributes for character cells.
+Only faint, boldface, and italic involve font support, mapping to four font weights (light, medium, demibold, and bold) and two slants (upright and italic).
+Strikethrough and underline attributes are rendered not through font selection but by overwriting the non-strikethrough non-underline glphys with appropriate horizontal lines.
+If faint and demibold weights are unavailable, the faint attribute is emulated by shading the foreground and background colours towards black.
+If bold weight is unavailable, the bold attribute is rendered by overlaying a glyph with a shifted copy of itself.
+(The <arg choice='plain'>--bold-as-colour</arg> command-line option will as an alternative always render boldface by tinting foreground colours towards white, but this is of limited use with applications that employ 256-colour or true-colour terminal controls, as many do nowadays.)
+If italic stroke is unavailable, the italic attribute is rendered as <emphasis>oblique</emphasis> by shifting the upright glyph.
+(Oblique is not the same as italic, note, and is often an inferior substitute for it.)
+</para>
+
+<para>
+Fonts are loaded from font files, which may be either in the FreeBSD/TrueOS "vtfont" format or in the straight 8 by 16 unadorned bitmap format used by FreeBSD's "syscons".
+(To convert an Adobe BDF format font file to "vtfont" format, use the FreeBSD <citerefentry><refentrytitle>vtfontcvt</refentrytitle><manvolnum>1</manvolnum></citerefentry> utility.)
+Font files are specified by the <replaceable>filename</replaceable> in the various font command-line options:
+<arg choice='plain'>--vtfont-faint-r</arg>, 
+<arg choice='plain'>--vtfont-faint-o</arg>, 
+<arg choice='plain'>--vtfont-faint-i</arg>, 
+<arg choice='plain'>--vtfont-normal-r</arg>, 
+<arg choice='plain'>--vtfont-normal-o</arg>, 
+<arg choice='plain'>--vtfont-normal-i</arg>, 
+<arg choice='plain'>--vtfont</arg>, 
+<arg choice='plain'>--font-light-r</arg>, 
+<arg choice='plain'>--font-light-o</arg>, 
+<arg choice='plain'>--font-light-i</arg>, 
+<arg choice='plain'>--font-medium-r</arg>, 
+<arg choice='plain'>--font-medium-o</arg>, 
+<arg choice='plain'>--font-medium-i</arg>, 
+<arg choice='plain'>--font-demibold-r</arg>, 
+<arg choice='plain'>--font-demibold-o</arg>, 
+<arg choice='plain'>--font-demibold-i</arg>,
+<arg choice='plain'>--font-bold-r</arg>, 
+<arg choice='plain'>--font-bold-o</arg>, and
+<arg choice='plain'>--font-bold-i</arg>.
+Fonts must be monospace fonts with a height of 8, 14, 15, or 16 and a width of 8, 9, 12, or 16.
+All glyphs are rendered in a 16 by 16 bounding square, with 8 by 8 pixel fonts doubled to 16 by 16 pixels.
+</para>
+
+<para>
+The weight and slant are encoded via these command-line options, because meta-information about weight and slant is not in a font file itself (it usually being encoded in the filename).
+The "vtfont" format has glyph sets for a pair of unspecified weights that are mapped by the command-line option: medium and bold (in the case of "normal") or light and demibold (in the case of "faint").
+The "vtfont" command-line options load both sets of glyphs from the font, with the slant specified by the option.
+The "font" command-line options are the only way to load bitmap fonts.
+When used with "vtfont" fonts, they only load one set of glyphs from the font, with weight and slant as specified by the option, providing fine-grained control of what glyphs are used from what "vtfont" font.
+</para>
+
+<para>
+With no fonts loaded, and for any characters which cannot be found in the loaded fonts, <command>console-fb-realizer</command> "greeks" its output,
+falling back to displaying a blank for any whitespace characters, a box for any C0 or C1 control characters, and a block for all other characters.
+Such "greeking" is of course illegible; and it is recommended that sufficient fonts be loaded in order to render at least the whole of Microsoft's Windows Glyph List 4.
+(One might be tempted to simply cover the OpenType World Glyph Set 1 character set instead.
+Bear in mind that the W1G character set does not include line drawing, block, arrow, and other characters that are commonly employed by TUI systems to draw UI widgets; whereas WGL4 does.)
+</para>
+
+<para>
+Fonts are loaded at program initialization and remain loaded thereafter.
+To change fonts, it is necessary to stop and restart <command>console-fb-realizer</command>.
+This does not, of course, affect the operation of the terminal emulator or the processes using the terminal.
+</para>
+
+</refsection>
+
+<refsection><title>Keyboard mapping</title>
+
+<para>
+The keyboard input event device provides a sequence of keycode numbers, with attached press/release flags.
+These are translated to keyboard actions through use of a loadable keyboard map.
+Unfortunately, Linux and the BSDs do not agree on a single set of keycode numbers, and cannot share one another's keyboard layout definitions.
+So the realizer first translates the non-portable Linux and BSD keycodes into a common set.
+It is this common set that is actually used in key maps.
+</para>
+
+<para>
+The map is stored in the file <replaceable>kbdmapname</replaceable> in machine-readable form.
+FreeBSD/TrueOS keymaps can be compiled from the BSD <citerefentry><refentrytitle>kbdmap</refentrytitle><manvolnum>5</manvolnum></citerefentry> human-readable form to this machine-readable form with the <citerefentry><refentrytitle>console-convert-kbdmap</refentrytitle><manvolnum>1</manvolnum></citerefentry> command.
+</para>
+
+<refsection><title>Map files</title>
+
+<para>
+In machine-readable form, a map is a simple succession of map entries, representing 17 "rows" of 16 "columns" per row, in row-major order.
+Each map entry comprises twenty-four big-endian 32-bit integers.
+</para>
+
+<para>
+A map entry describes two things: a set of possible actions to be taken when the key is pressed and released, and how to select which action based upon the momentary keyboard modifier state.
+Keyboard modifiers comprise (in ISO 9995-1 terminology) modifiers for level 2, level 3, and group 2; for caps, num, and shift locks; and for super, alt, and control.
+What keys act as these modifiers is of course determined by the keyboard layout: but often the level 2 modifiers are the shift keys; the level 3 modifier is the "Option" (Apple keyboards) or "AltGr" (IBM PC/AT keyboards) key; and super is the "Command"/'Apple" (Apple keyboards), "Meta" (Sun keyboards), or "Windows" (Microsoft keyboards) key.
+</para>
+
+<para>
+The selection class code is first in each entry, and the code values are here designated by their UCS-4 code points.
+</para>
+
+<variablelist>
+<varlistentry>
+<term>'<code>p</code>' (U+00000070, "plain")</term>
+<listitem><para>
+The keyboard modifier state is entirely ignored and the first action is always chosen.
+</para></listitem>
+</varlistentry>
+<varlistentry>
+<term>'<code>s</code>' (U+00000073, "shiftable")</term>
+<listitem><para>
+When selecting an action, the sense of the level2 modifier state is inverted by the shift lock state.
+Shift lock operates like the typewriter facility of that name, locking on until either level2 modifier key is pressed.
+This is generally used for non-alphabetic keys that obey shift lock but not caps lock.
+</para></listitem>
+</varlistentry>
+<varlistentry>
+<term>'<code>c</code>' (U+00000063, "capsable")</term>
+<listitem><para>
+When selecting an action, the sense of the level2 modifier state is inverted by the OR-combined caps lock and shift lock states.
+This is generally used for alphabetic keys that obey caps lock and shift lock.
+</para></listitem>
+</varlistentry>
+<varlistentry>
+<term>'<code>n</code>' (U+0000006E, "numable")</term>
+<listitem><para>
+When selecting an action, the sense of the level2 modifier state is inverted by the OR-combined num lock and shift lock states.
+This is generally used for auxiliary keys that obey num lock and shift lock.
+</para></listitem>
+</varlistentry>
+<varlistentry>
+<term>'<code>f</code>' (U+00000066, "funcable")</term>
+<listitem><para>
+When selecting an action, the sense of the level2 modifier state is inverted by the shift lock state, and the level3 modifier state is replaced by the alt state.
+This is generally used for function block keys that obey shift lock but not caps lock.
+</para></listitem>
+</varlistentry>
+</variablelist>
+
+<para>
+The next seven 32-bit numbers are reserved, and should be set to zero.
+The actions, chosen according to the selection class, are the remaining sixteen 32-bit numbers.
+These denote the actions for various combinations of modifiers: none, level2, control, control+level2, level3, level2+level3, control+level3, control+level2+level3, group2, group2+level2, group2+control, group2+control+level2, group2+level3, group2+level2+level3, group2+control+level3, and group2+control+level2+level3, with inversions and replacements as aforementioned.
+</para>
+
+<para>
+The most significant byte denotes the action type and the interpretation of the remainder of the action.
+(These are, intentionally, similar to the input protocol used by <citerefentry><refentrytitle>console-terminal-emulator</refentrytitle><manvolnum>1</manvolnum></citerefentry>, aimed at making debugging and trace analysis simpler.
+They are two distinct and separate protocols, however.)
+</para>
+
+<variablelist>
+<varlistentry>
+<term><code>0x00xxxxxx</code></term>
+<listitem><para>
+No-operation,
+Take no action.
+This is used for keys that have no action in the key map.
+</para></listitem>
+</varlistentry>
+<varlistentry>
+<term><code>0x01nnnnnn</code></term>
+<listitem><para>
+UCS-3 key.
+On press or autorepeat, a unicode character message for the code point <code>nnnnnn</code> is sent to the input FIFO.
+</para></listitem>
+</varlistentry>
+<varlistentry>
+<term><code>0x03nnnncc</code></term>
+<listitem><para>
+Modifier key.
+Modifiers do not autorepeat.
+On press or release, the modifier key <code>nnnn</code> is enacted against the current keyboard modifier state according to the <code>cc</code> command.
+</para>
+<variablelist>
+<varlistentry>
+<term><code>0x01</code></term>
+<listitem><para>
+Momentary.
+The modifier is on when the key is pressed, and off when the key is released.
+</para></listitem>
+</varlistentry>
+<varlistentry>
+<term><code>0x02</code></term>
+<listitem><para>
+Latching.
+Pressing the key latches the modifier on until a non-modifier key is pressed.
+</para></listitem>
+</varlistentry>
+<varlistentry>
+<term><code>0x03</code></term>
+<listitem><para>
+Locking.
+Pressing the key locks the modifier on; releasing and pressing it again locks
+it back off.
+</para></listitem>
+</varlistentry>
+</variablelist>
+</listitem>
+</varlistentry>
+<varlistentry>
+<term><code>0x0Annnnxx</code></term>
+<listitem><para>
+Session selection key.
+On press or autorepeat, a session selection message for the session number <code>nnnn</code> is sent to the input FIFO.
+</para></listitem>
+</varlistentry>
+<varlistentry>
+<term><code>0x0Cnnnnxx</code></term>
+<listitem><para>
+Consumer key.
+On press or autorepeat, a consumer key message for the consumer key number <code>nnnn</code> is sent to the input FIFO.
+</para></listitem>
+</varlistentry>
+<varlistentry>
+<term><code>0x0Ennnnxx</code></term>
+<listitem><para>
+Extended key.
+On press or autorepeat, an extended key message for the extended key number <code>nnnn</code> is sent to the input FIFO.
+</para></listitem>
+</varlistentry>
+<varlistentry>
+<term><code>0x0Fnnnnxx</code></term>
+<listitem><para>
+Function key.
+On press or autorepeat, a function key message for the function key number <code>nnnn</code> is sent.
+This is used for keyboard layouts where the function key block has a large number of actual keys.
+The terminal emulator, and processes connected to the terminal, will see function keys with modifiers.
+</para></listitem>
+</varlistentry>
+<varlistentry>
+<term><code>0x1Fnnnnxx</code></term>
+<listitem><para>
+Unmodifiable function key.
+On press or autorepeat, a function key message for the function key number <code>nnnn</code> is sent.
+The accompanying keyboard modifier state does not incorporate the level or group modifiers, which will never be seen by the terminal emulator or processes connected to the terminal.
+This is used for keyboard layouts where the function key block has a small number of actual keys and the level+group modifiers are used "locally" (within the realizer) to simulate a larger key block.
+</para></listitem>
+</varlistentry>
+</variablelist>
+
+</refsection>
+
+<refsection><title>Example keyboard map entries</title>
+
+<para>
+Keyboard maps are tailored, of course, to country, layout (QWERTY, AZERTY, Dvorak, Maltron, and so forth), and the physical layout of the keyboard (104 keys, 109 keys, 124 keys, and so forth).
+Here are some example keymap entries:
+</para>
+<variablelist>
+<varlistentry>
+<term>
+<code>0x00000063</code>,
+<code>0x00000000</code>,
+<code>0x00000000</code>,
+<code>0x00000000</code>,
+<code>0x00000000</code>,
+<code>0x00000000</code>,
+<code>0x00000000</code>,
+<code>0x00000000</code>,
+<code>0x01000073</code>,
+<code>0x01000053</code>,
+<code>0x01000013</code>,
+<code>0x01000013</code>,
+<code>0x010000DF</code>,
+<code>0x010000A7</code>,
+<code>0x01000013</code>,
+<code>0x01000013</code>.
+<code>0x01000073</code>,
+<code>0x01000053</code>,
+<code>0x01000013</code>,
+<code>0x01000013</code>,
+<code>0x010000DF</code>,
+<code>0x010000A7</code>,
+<code>0x01000013</code>,
+<code>0x01000013</code>.
+</term>
+<listitem><para>
+'<code>S</code>' on the U.S. International IBM PC/AT keyboard, QWERTY layout.
+It varies according to caps lock, and produces '<code>&#xdf;</code>' and '<code>&#xa7;</code>' with the level 3 modifier.
+The control modifier always produces <code>DC3</code> (U+0013).
+</para></listitem>
+</varlistentry>
+<varlistentry>
+<term>
+<code>0x00000066</code>,
+<code>0x00000000</code>,
+<code>0x00000000</code>,
+<code>0x00000000</code>,
+<code>0x00000000</code>,
+<code>0x00000000</code>,
+<code>0x00000000</code>,
+<code>0x00000000</code>,
+<code>0x0E0F0100</code>,
+<code>0x1F000D00</code>,
+<code>0x1F001900</code>,
+<code>0x1F002500</code>,
+<code>0x0A000100</code>,
+<code>0x0A000D00</code>,
+<code>0x0A001900</code>,
+<code>0x0A002500</code>.
+<code>0x0E0F0100</code>,
+<code>0x1F000D00</code>,
+<code>0x1F001900</code>,
+<code>0x1F002500</code>,
+<code>0x0A000100</code>,
+<code>0x0A000D00</code>,
+<code>0x0A001900</code>,
+<code>0x0A002500</code>.
+</term>
+<listitem><para>
+F1 on the U.S. International IBM PC/AT keyboard, QWERTY layout.
+It ignores level 3, varying according to the level 2, alt, and control modifiers to produce either PAD_F1, F13, F25, and F37 or session switch commands
+for sessions 1, 13, 25, and 37.
+See <citerefentry><refentrytitle>console-terminal-emulator</refentrytitle><manvolnum>1</manvolnum></citerefentry> for why the base, unmodified, key is the PAD_F1 key, not the F1 key.
+</para></listitem>
+</varlistentry>
+</variablelist>
+
+</refsection>
+
+<refsection><title>Dead keys</title>
+
+<para>
+So-called "dead" keys are otherwise ordinary UCS-3 keys in a keyboard map, except that they denote Unicode combining characters; i.e. characters in the "Me" ("Mark, Enclosing") and "Mn" ("Mark, Non-spacing") Unicode code point categories.
+<command>console-fb-realizer</command> remembers such "dead" keys, without transmitting them to the input FIFO as they are pressed (or autorepeated).
+It attempts to combine them with the next non-combining character keypress.
+In this respect it behaves mostly according to ISO/IEC 9995-3 and DIN/EN 2137:
+</para>
+
+<itemizedlist>
+<listitem><para>
+<command>console-fb-realizer</command> implements the extra so-called "peculiar" combinations given by the ISO and DIN standards (and also found in several other national keyboard standards).
+These are applied before attempting any Unicode composition.
+Most of these involve:
+</para>
+<variablelist>
+<varlistentry>
+<term><code>COMBINING SHORT STROKE OVERLAY</code> (U+0335)</term>
+<listitem><para>
+In ISO 9995-3 keyboard layouts this is <code>Group2</code>+<code>Level3</code>+<code>C08</code> (<code>Shift</code>+<code>Option</code>, <code>Option</code>+<code>'K'</code> on the U.S. International keyboard).
+Unicode does not define any compositions using this combining character.
+</para></listitem>
+</varlistentry>
+<varlistentry>
+<term><code>COMBINING LONG SOLIDUS OVERLAY</code> (U+0338)</term>
+<listitem><para>
+In ISO 9995-3 keyboard layouts this is <code>Group2</code>+<code>Level3</code>+<code>C09</code> (<code>Shift</code>+<code>Option</code>, <code>Option</code>+<code>'L'</code> on the U.S. International keyboard).
+Unicode also defines compositions using this combining character.
+The ISO 9995-3 compositions overlap in only one case, which is the same in both ISO 9995-3 and Unicode.
+</para></listitem>
+</varlistentry>
+</variablelist>
+</listitem>
+<listitem><para>
+The ISO and DIN standards define "peculiar" combinations with the space character that generate standalone accents.
+Any sequence of "dead" keys followed by Space generates a sequence of precomposed non-combining accent characters that correspond to the combining characters.
+</para></listitem>
+<listitem><para>
+The ISO and DIN standards are not specific about Unicode combining characters.
+<command>console-fb-realizer</command> applies the "canonical" composition rules given by Unicode, attempting to produce a stream of input characters in Unicode Normalized Form C.
+Any leftover combining characters that cannot be precomposed are treated as if combined with Space, and emitted before the composed character.
+This differs from Unicode Normalization, where leftover combining characters always follow the "starter" character.
+Having leftover combining characters precede the composed character both mimicks the existing behaviour of "dead" keys on several systems and is least surprising to the typist as it (roughly) preserves typed order.
+(Typed order is not entirely preserved; the "dead" keys are sorted by Unicode combining class as a side-effect of NFC composition.)
+</para></listitem>
+<listitem><para>
+Not all input is in Unicode Normalized Form C.
+The ISO and DIN standards define a "pass-through" mechanism that allows a typist to enter combining characters as-is: any sequence of "dead" keys followed by the Zero-Width Non-Joiner (entered as <code>Group2</code>+<code>Level2</code>+<code>A03</code> in ISO 9995-3 keyboard layouts; which is <code>Shift</code>+<code>Option</code>, <code>Shift</code>+<code>Space</code> on the U.S. International keyboard) generates that sequence of non-combining characters in typed order.
+</para></listitem>
+<listitem><para>
+Full Unicode Normalization is not performed.
+In particular, if the typist enters a precomposed character after the "dead" keys, it is not decomposed before the composition rules are applied.
+This is done in order not to surprise the typist.
+Full Unicode NFD decomposition followed by Unicode NFC composition could result in different leftover combining characters in some cases.
+It also would perform various one-way transformations.
+</para></listitem>
+</itemizedlist>
+
+</refsection>
+
+</refsection>
+
+<refsection><title>Security</title>
+
+<para>
+<command>console-fb-realizer</command> only requires sufficient privileges to access the framebuffer, the input device(s), the display buffer file, and the FIFO.
+Superuser privileges are not necessary.
+The recommended configuration is that the file and the FIFO are (respectively) readable and writable by a dedicated unprivileged user or group.
+</para>
+
+<para>
+It does not attempt to create the file or FIFO if they do not exist, because this would create them with the wrong owner and group; and it thus requires no write access to their containing directory.
+</para>
+
+</refsection>
+
+<refsection><title>Author</title><para>Jonathan de Boyne Pollard</para></refsection>
+
+</refentry>

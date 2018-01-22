@@ -1,0 +1,14 @@
+chkconfig
+emergency
+halt
+haltsys
+init
+initctl-read
+normal
+poweroff
+reboot
+rescue
+runlevel
+service
+shutdown
+telinit

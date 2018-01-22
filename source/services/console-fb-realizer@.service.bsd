@@ -1,0 +1,22 @@
+## **************************************************************************
+## For copyright and licensing terms, see the file named COPYING.
+## **************************************************************************
+
+[Unit]
+Description=Virtual console realizer for %I
+After=console-multiplexor@%i.service
+Wants=console-multiplexor@%i.service frame-buffer.target
+
+[Service]
+PermissionsStartOnly=yes
+EnvironmentDirectory=env/
+SessionLeader=yes
+User=daemon
+ExecStartPre=detach-kernel-usb-driver ${DETACHED_UGEN_DEVICES}
+ExecRestartPre=detach-kernel-usb-driver ${DETACHED_UGEN_DEVICES}
+ExecStartPre=sh -c 'for d in ${OWNED_DEVICES} ; do test -n "$d" && test -c "$d" && chown daemon:tty "$d" ; done'
+ExecRestartPre=sh -c 'for d in ${OWNED_DEVICES} ; do test -n "$d" && test -c "$d" && chown daemon:tty "$d" ; done'
+ExecStart=vc-get-tty "${KERNEL_VT}" %p ${FONTS} ${FLAGS} --kernel-vt ${INPUTS} ${KBDMAP:+--keyboard-map "${KBDMAP}"} /run/dev/%I/
+
+[Install]
+WantedBy=multi-user.target

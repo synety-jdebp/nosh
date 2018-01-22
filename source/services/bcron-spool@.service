@@ -1,0 +1,15 @@
+## **************************************************************************
+## For copyright and licensing terms, see the file named COPYING.
+## **************************************************************************
+
+[Unit]
+Description=Guenter's bcron submission server
+
+[Service]
+EnvironmentDirectory=env
+LimitMEMORY=70000000
+User=cron
+ExecStart=%p
+
+[Install]
+WantedBy=server.target

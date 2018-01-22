@@ -1,0 +1,20 @@
+## **************************************************************************
+## For copyright and licensing terms, see the file named COPYING.
+## **************************************************************************
+
+[Unit]
+Description=Set up the machine ID
+DefaultDependencies=false
+After=local-fs.target
+
+[Service]
+Type=oneshot
+EnvironmentDirectory=env
+ExecStart=setup-machine-id
+# This is a one-shot service that can be re-triggered by starting it again.
+#RemainAfterExit=1
+Restart=no
+
+[Install]
+StoppedBy=shutdown.target
+WantedBy=sysinit.target

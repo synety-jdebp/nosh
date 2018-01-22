@@ -1,0 +1,89 @@
+<title>Importing systemd unit files</title>
+<link rel="Up" href="external-formats.html" title="External formats" />
+<h1>
+<code>/etc/rc.conf</code> conversion
+</h1>
+
+<p>
+The native mechanism for this system is the service bundle.
+Services are enabled/disabled with service bundle mechanisms, and service environment variables are set with the likes of <a href="envdir.html"><code>envdir</code></a> processing a directory within the service bundle.
+The external formats import subsystem creates <a href="gazetteer.html#rc.conf">an amalgamated <code>rc.conf</code> file</a> which incorporates the information from all of the several system <code>rc.conf</code> files as well as from other sources.
+There are two ways in which settings from it are then imported.
+</p>
+
+<h2>
+<code>rc.conf</code> contents
+</h2>
+
+<p>
+<a href="gazetteer.html#rc.conf">The amalgamated <code>rc.conf</code> file</a> incorporates the information from:
+</p>
+<ul>
+<li><p>
+The FreeNAS <code>/data/freenas-v1.db</code> database, in particular the enabled "system tunables".
+</p></li>
+<li><p>
+<code>/etc/default/rc.conf</code>, which is the "known starting point" of the <code>rc.conf</code> system.
+</p></li>
+<li><p>
+All files named in the <code>rc_conf_files</code> setting that is in <code>/etc/default/rc.conf</code>.
+These include <code>/etc/rc.conf</code>, <code>/etc/rc.conf.local</code>, and any further extra files employed by the likes of PC-BSD/TrueOS.
+</p></li>
+<li><p>
+The result of converting several console settings files into the equivalent FreeBSD/TrueOS <code>rc.conf</code> settings:
+</p>
+<ul>
+<li><p>
+<code>/etc/vconsole.conf</code>, which is the systemd console settings file;
+</p></li>
+<li><p>
+<code>/etc/defaults/console-setup</code> and <code>/etc/defaults/keyboard</code>, which are the Debian console-setup and keyboard packages' console settings files;
+and
+</p></li>
+<li><p>
+<code>/etc/kbd/config</code>, which is the Debian kbd package's console settings file.
+</p></li>
+</ul>
+</li>
+</ul>
+
+<h2>
+Service preset information
+</h2>
+
+<p>
+One function of <code>/etc/rc.conf</code> and <code>/etc/rc.conf.local</code> on BSD systems is to enable and disable services.
+This is done by setting configuration variables, whose names are the name of the service plus a standard suffix, to "YES" or "NO".
+</p>
+
+<p>
+The <a href="system-control.html"><code>system-control&nbsp;preset</code></a> command automatically imports these settings when determining whether a service should be enabled or disabled.
+</p>
+
+<p>
+It only affects the enabled/disable state.
+A disabled service that does not automatically start at bootstrap can still be manually started later.
+The Mewburn <code>rc</code> system has no notion of being able to manually start disabled services, in contrast, as the Mewburn <code>rc</code> mechanism at bootstrap always attempts to start every service.
+The enable flag actually behaves as an inverted inhibitor, simply blocking all attempts to start the service, bootstrap or otherwise, rather than as a positive selector to select which services to automatically start.
+</p>
+
+<h2>
+Daemon environment information
+</h2>
+
+<p>
+Another function of <code>/etc/rc.conf</code> and <code>/etc/rc.conf.local</code> on BSD systems is to hold d&aelig;mon environment variable information.
+Conventionally, environment variables begin with the name of the service.
+</p>
+
+<p>
+If you always manipulate d&aelig;mon environment variable information with the BSD <code>rcctl</code> command, rather than by editing <code>/etc/rc.conf</code> and <code>/etc/rc.conf.local</code> directly, then environment variable information will be edited directly within service bundles.
+The toolset comes with a replacement <a href="rcctl.html"><code>rcctl</code></a> command that translates <code>get</code> and <code>set</code> subcommands into the service bundle equivalent, editing files in the service bundle's <code>env/</code> subdirectory with <a href="system-control.html"><code>system-control&nbsp;set-service-env</code></a> and <a href="system-control.html"><code>system-control&nbsp;print-service-env</code></a>.
+</p>
+
+<p>
+As the manual page mentions, best practice <em>even with the original OpenBSD tool</em> is to <em>not</em> get into the bad habit of using <code>rcctl&nbsp;set&nbsp;</code><i>name</i><code>&nbsp;status</code> instead of <code>rcctl&nbsp;enable&nbsp;</code><i>name</i> and <code>rcctl&nbsp;disable&nbsp;</code><i>name</i>.
+The <code>set</code>/<code>get</code> way of doing things not only doesn't work with the <a href="rcctl.html"><code>rcctl</code></a> shim but doesn't even work for NetBSD, DragonFly BSD, FreeBSD, or TrueOS, none of which are compatible with OpenBSD's unique <code>rc.conf</code> variable naming scheme.
+In contrast, the <code>enable</code>/<code>disable</code> way of doing things works both with the original tool and the shim.
+(Ports of the original OpenBSD tool to other BSDs will also likely ensure that <code>enable</code>/<code>disable</code> do the right thing for the target platform.)
+</p>

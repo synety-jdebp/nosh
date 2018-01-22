@@ -1,0 +1,17 @@
+## **************************************************************************
+## For copyright and licensing terms, see the file named COPYING.
+## **************************************************************************
+
+[Unit]
+Description=SSH per-connection service
+Requires=sshdgenkeys.service
+After=sshdgenkeys.service
+
+[Service]
+EnvironmentDirectory=env
+RuntimeDirectory=%p
+RuntimeDirectoryMode=0755
+ExecStart=%p -D -e -i
+
+[Install]
+WantedBy=server.target

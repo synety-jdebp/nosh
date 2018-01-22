@@ -1,0 +1,19 @@
+## **************************************************************************
+## For copyright and licensing terms, see the file named COPYING.
+## **************************************************************************
+
+[Unit]
+Description=%p boot/shutdown record generator
+After=local-fs.target
+Before=multi-user-pre.target
+
+[Service]
+Type=oneshot
+ExecStart=%p boot
+ExecStopPost=%p shutdown
+# This is a pseudo-daemon that does not have a running process.
+RemainAfterExit=yes
+Restart=no
+
+[Install]
+WantedBy=multi-user.target

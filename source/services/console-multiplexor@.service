@@ -1,0 +1,21 @@
+## **************************************************************************
+## For copyright and licensing terms, see the file named COPYING.
+## **************************************************************************
+
+[Unit]
+Description=Virtual console multiplexor driving %I
+
+[Service]
+User=daemon
+Group=tty
+PermissionsStartOnly=yes
+#RuntimeDirectory=dev/%I
+#RuntimeDirectoryMode=02755
+ExecStartPre=mkdir -m 02755 -p /run/dev /run/dev/%I
+# Not until we find out how to have ACLs in /run on FreeBSD.
+#ExecStartPre=setfacl -m u:daemon:rwx /run/dev/%I
+ExecStartPre=chown daemon:tty /run/dev/%I
+ExecStart=sh -c 'exec %p /run/dev/%I vc[0-9]*'
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,20 @@
+## **************************************************************************
+## For copyright and licensing terms, see the file named COPYING.
+## **************************************************************************
+
+[Unit]
+Description=Linux statically-configured network interface settings
+Description=This is needed on Linux systems where NetworkManager has been configured not to manage the [ifupdown] interfaces.
+After=network-runtime.service
+Wants=network-runtime.service
+
+[Service]
+Type=oneshot
+ExecStart=ifup --verbose --all
+ExecStopPost=ifdown --verbose --all
+# This is a pseudo-daemon that does not have a running process.
+RemainAfterExit=yes
+Restart=no
+
+[Install]
+WantedBy=static-networking.target

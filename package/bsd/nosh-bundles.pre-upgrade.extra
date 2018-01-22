@@ -1,0 +1,74 @@
+#!/bin/sh -
+# /run is now in the root.
+test -e /var/run || ln -s -f -- /run /var/
+
+# Convert from the old 1.16 and earlier directory structure.
+install -d -m 0755 -- /etc/service-bundles
+if test \! -L /etc/system-manager/targets && test -d /etc/system-manager/targets && test \! -e /etc/service-bundles/targets
+then
+	mv -i -- /etc/system-manager/targets /etc/service-bundles/
+	ln -s -f -- ../service-bundles/targets /etc/system-manager
+fi
+if test \! -L /etc/sv && test -d /etc/sv && test \! -e /etc/service-bundles/services
+then
+	mv -i -- /etc/sv /etc/service-bundles/services
+	ln -s -f -- service-bundles/services /etc/sv
+fi
+for d in / /usr/local/
+do
+	install -d -m 0755 -- "${d}"etc/system-control
+	if [ \! -L "${d}"etc/system-manager/presets ] && [ -d "${d}"etc/system-manager/presets ]
+	then
+		mv -i -- "${d}"etc/system-manager/presets "${d}"etc/system-control/
+		ln -s -f -- ../system-control/presets "${d}"etc/system-manager
+	fi
+done
+
+# This service has been relocated.
+if test -d /var/sv/ldconfig && system-control is-enabled /var/sv/ldconfig
+then
+	system-control disable /var/sv/ldconfig
+fi
+
+relocate_var_sv() {
+        local e
+        if test -d "/var/sv/$1" && test \! -d "/var/sv/$2"
+        then
+                system-control is-enabled "/var/sv/$1"
+                e=$?
+                system-control disable "/var/sv/$1"
+                mv -i -- "/var/sv/$1" "/var/sv/$2"
+                test $e -eq 0 && system-control enable "/var/sv/$2"
+        fi
+}
+
+discontinue() {
+        local e
+        for I
+        do
+                if e="`system-control find \"$I\" 2>/dev/null`"
+                then
+                        if system-control is-enabled "$e"
+                        then
+                                system-control disable "$e"
+                        fi
+                        if system-control is-loaded "$e"
+                        then
+                                system-control unload-when-stopped "$e"
+                                system-control stop "$e"
+                        fi
+                fi
+        done
+}
+
+# These services have been discontinued.
+discontinue \
+	/var/sv/openvpn@server \
+	/var/sv/openvpn@client \
+	stty-sane@console \
+	make-utx-log \
+	;
+
+# These services have been relocated.
+relocate_var_sv gnucron debian-cron
+relocate_var_sv cyclog@gnucron cyclog@debian-cron

@@ -1,0 +1,24 @@
+## **************************************************************************
+## For copyright and licensing terms, see the file named COPYING.
+## **************************************************************************
+
+[Unit]
+Description=Terminal emulator driving %I
+Before=ttylogin@%i-tty.service
+
+[Service]
+User=daemon
+Group=tty
+PermissionsStartOnly=yes
+# This mechanism doesn't permit subdirectories.
+#RuntimeDirectory=dev/%I
+#RuntimeDirectoryMode=02755
+ExecStartPre=mkdir -m 02755 -p /run/dev /run/dev/%I
+# Not util we find out how to have ACLs in /run on FreeBSD.
+#ExecStartPre=setfacl -m u:daemon:rwx /run/dev/%I
+ExecStartPre=chown daemon:tty /run/dev/%I
+ExecStart=pty-get-tty console-terminal-emulator /run/dev/%I
+RestartSec=0
+
+[Install]
+WantedBy=ttylogin@%i-tty.service

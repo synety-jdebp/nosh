@@ -1,0 +1,13 @@
+## **************************************************************************
+## For copyright and licensing terms, see the file named COPYING.
+## **************************************************************************
+
+[Unit]
+Description=OpenBSD NTP daemon
+
+[Service]
+EnvironmentDirectory=env
+ExecStart=ntpd -d ${config:+-f "${config}"} ${flags}
+
+[Install]
+WantedBy=workstation.target

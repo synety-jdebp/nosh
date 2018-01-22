@@ -1,0 +1,59 @@
+#!/bin/sh -
+## **************************************************************************
+## For copyright and licensing terms, see the file named COPYING.
+## **************************************************************************
+
+if ! test -w /dev/random || ! test -c /dev/random
+then
+	echo 1>&2 "/dev/random is not available."
+	exec false
+fi
+
+# These are fallback defaults to the conventional Linux/FreeBSD/OpenBSD locations.
+# An unconventional location should be signalled by actually setting the service environment variables and not relying upon a fallback default.
+# The external configuration import subsystem (q.v.) uses what is in /etc/rc.conf, generating a fake rc.conf with these settings on Linux operating systems.
+case "`uname`" in
+Linux)	
+	file="${file-/var/lib/urandom/random-seed}"
+	;;
+*BSD)	
+	dir="${dir-/var/db/entropy}" 
+	file="${file-/var/db/entropy-file}" 
+	;;
+esac
+
+load() {
+	case "${dir}" in
+	[Nn][Oo]|'')
+		;;
+	*)
+		if test -d "${dir}"
+		then
+			ls -1 "${dir}/" | while read -r f
+			do
+				dd if="${dir}/${f}" of=/dev/random bs=4096
+				rm -- "${dir}/${f}"
+			done
+		fi
+		;;
+	esac
+	case "${file}" in
+	[Nn][Oo]|'')
+		;;
+	*)
+		test -f "${file}" && dd if="${file}" of=/dev/random bs=4096
+		;;
+	esac
+}
+
+save() {
+	case "${file}" in
+	[Nn][Oo]|'')
+		;;
+	*)
+		dd if=/dev/random of="${file}" bs=4096 count=1
+		;;
+	esac
+}
+
+"$@"

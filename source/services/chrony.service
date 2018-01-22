@@ -1,0 +1,12 @@
+## **************************************************************************
+## For copyright and licensing terms, see the file named COPYING.
+## **************************************************************************
+
+[Unit]
+Description=Chrony NTP daemon
+
+[Service]
+ExecStart=%pd -d
+
+[Install]
+WantedBy=workstation.target
