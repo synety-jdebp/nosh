@@ -1,0 +1,3 @@
+# Extra post-remove for nosh-service-management
+
+dpkg-divert --package nosh-service-management --remove --rename /usr/lib/dbus-1.0/dbus-daemon-launch-helper

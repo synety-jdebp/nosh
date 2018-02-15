@@ -1,7 +1,7 @@
 *.tar.bz2
-build
-command
-config
-debian
-guide
-manual
+./build
+./command
+./config
+./debian
+./guide
+./manual
